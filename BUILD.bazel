@@ -1,0 +1,19 @@
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+gazelle(
+    name = "gazelle",
+    prefix = "github.com/ldx/bep2prom",
+)
+
+gazelle(
+    name = "gazelle-update-repos",
+    args = [
+        "-from_file=go.mod",
+    ],
+    command = "update-repos",
+)
+
+gazelle(
+    name = "gazelle-fix",
+    command = "fix",
+)

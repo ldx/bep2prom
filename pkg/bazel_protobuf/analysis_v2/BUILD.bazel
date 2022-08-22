@@ -1,0 +1,25 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+
+proto_library(
+    name = "analysis_proto",
+    srcs = ["analysis_v2.proto"],
+    visibility = ["//visibility:public"],
+    deps = ["//pkg/bazel_protobuf/build:blaze_query_proto"],
+)
+
+go_proto_library(
+    name = "analysis_go_proto",
+    importpath = "github.com/ldx/bep2prom/pkg/bazel_protobuf/analysis_v2",
+    proto = ":analysis_proto",
+    visibility = ["//visibility:public"],
+    deps = ["//pkg/bazel_protobuf/build"],
+)
+
+go_library(
+    name = "analysis_v2",
+    embed = [":analysis_go_proto"],
+    importpath = "github.com/ldx/bep2prom/pkg/bazel_protobuf/analysis_v2",
+    visibility = ["//visibility:public"],
+)
