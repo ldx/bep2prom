@@ -29,6 +29,7 @@ go_proto_library(
 
 go_library(
     name = "build_event_stream",
+    srcs = ["build_event_stream.go"],
     embed = [":build_event_stream_go_proto"],
     importpath = "github.com/ldx/bep2prom/pkg/build_event_stream",
     visibility = ["//visibility:public"],
