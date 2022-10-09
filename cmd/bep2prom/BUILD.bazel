@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/ldx/bep2prom/cmd/bep2prom",
     visibility = ["//visibility:private"],
     deps = [
+        "//pkg/metrics",
         "//pkg/server",
         "@com_github_jessevdk_go_flags//:go-flags",
         "@go_googleapis//google/devtools/build/v1:build_go_proto",

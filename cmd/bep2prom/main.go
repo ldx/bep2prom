@@ -11,6 +11,7 @@ import (
 	bes "google.golang.org/genproto/googleapis/devtools/build/v1"
 	"google.golang.org/grpc"
 
+	"github.com/ldx/bep2prom/pkg/metrics"
 	"github.com/ldx/bep2prom/pkg/server"
 )
 
@@ -31,12 +32,17 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	grpcServer := grpc.NewServer()
-	bes.RegisterPublishBuildEventServer(grpcServer, &server.Server{})
+	bes.RegisterPublishBuildEventServer(grpcServer, server.New())
+	go func() {
+		err = metrics.Serve()
+		if err != nil {
+			log.Fatalf("Failed to serve metrics: %v", err)
+		}
+	}()
 	go func() {
 		log.Printf("Listening on %s", opts.ListenAddr)
 		if err = grpcServer.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
-			os.Exit(1)
 		}
 	}()
 	for {
