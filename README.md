@@ -39,3 +39,5 @@ Then, when you run `bazel build` or `bazel test` for your build:
     $ bazel build --bes_backend=grpc://localhost:8799 //...
 
 will send build events to `bep2prom`. Prometheus metrics will be exposed by `bep2prom` on `:2112` by default.
+
+To scrape metrics from `bep2prom`, make sure your Prometheus scrape configuration includes the Prometheus endpoint of `bep2prom`.
