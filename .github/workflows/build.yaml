@@ -18,6 +18,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
+      - run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - run: bazel run --define=IMAGE_TAG=$IMAGE_TAG //cmd/bep2prom:push_image
         env:
           IMAGE_TAG: latest
