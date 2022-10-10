@@ -18,8 +18,9 @@ jobs:
       - run: bazel test //...
 
   release:
-    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
     needs: build-and-test
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
       - run: IMAGE_TAG=latest bazel build //cmd/bep2prom:push_image
