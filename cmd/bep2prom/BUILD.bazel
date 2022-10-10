@@ -28,10 +28,13 @@ go_image(
 )
 
 container_push(
-   name = "push_image",
-   image = ":image",
-   format = "OCI",
-   registry = "ghcr.io",
-   repository = "ldx/bep2prom",
-   tag = "$(IMAGE_TAG)",
+    name = "push_image",
+    image = ":image",
+    format = "OCI",
+    registry = "ghcr.io",
+    repository = "ldx/bep2prom",
+    tag = "$(IMAGE_TAG)",
+    tags = [
+        "manual"
+    ],
 )
