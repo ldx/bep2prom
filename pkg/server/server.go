@@ -181,7 +181,7 @@ func updateMetricsFromEvent(buildID, invocationID string, sequenceNumber int64, 
 	}
 	if configured := event.GetConfigured(); configured != nil {
 		log.Printf("configured: %v\n", configured)
-		allLabels := metrics.MergeLabels(labels, map[string]string{"target_kind": configured.GetTargetKind()})
+		allLabels := metrics.MergeLabels(labels, map[string]string{"kind": configured.GetTargetKind()})
 		metrics.BuildEventConfigured.With(allLabels).Inc()
 	}
 	//if convenienceSymlinksIdentified := event.GetConvenienceSymlinksIdentified(); convenienceSymlinksIdentified != nil {
@@ -234,11 +234,11 @@ func updateMetricsFromEvent(buildID, invocationID string, sequenceNumber int64, 
 		}
 		status := testResult.Status.String()
 		cachedLocally := fmt.Sprintf("%v", testResult.CachedLocally)
-		//testResult.ExecutionInfo.CachedRemotely
+		cachedRemotely := fmt.Sprintf("%v", testResult.ExecutionInfo != nil && testResult.ExecutionInfo.CachedRemotely || false)
 		//testResult.ExecutionInfo.ExitCode
 		//testResult.ExecutionInfo.ResourceUsage[0].Name
 		//testResult.ExecutionInfo.ResourceUsage[0].Value
-		allLabels := metrics.MergeLabels(labels, map[string]string{"status": status, "cached_locally": cachedLocally})
+		allLabels := metrics.MergeLabels(labels, map[string]string{"status": status, "cached_locally": cachedLocally, "cached_remotely": cachedRemotely})
 		metrics.BuildEventTestResult.With(allLabels).Inc()
 	}
 	if testSummary := event.GetTestSummary(); testSummary != nil {

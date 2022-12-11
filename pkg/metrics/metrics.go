@@ -45,7 +45,7 @@ var (
 			Name: "build_event_configured_total",
 			Help: "Build event configured total",
 		},
-		[]string{"build_id", "invocation_id", "git_branch", "target_kind"},
+		[]string{"build_id", "invocation_id", "git_branch", "kind"},
 	)
 	BuildEventConfiguration = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -59,7 +59,7 @@ var (
 			Name: "build_event_test_result_total",
 			Help: "Build event test result total",
 		},
-		[]string{"build_id", "invocation_id", "git_branch", "status", "cached_locally"},
+		[]string{"build_id", "invocation_id", "git_branch", "status", "cached_locally", "cached_remotely"},
 	)
 	BuildEventTestSummaryOverallStatus = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
