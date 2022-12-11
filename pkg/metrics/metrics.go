@@ -59,7 +59,15 @@ var (
 			Name: "build_event_test_result_total",
 			Help: "Build event test result total",
 		},
-		[]string{"build_id", "invocation_id", "git_branch", "status", "cached_locally", "cached_remotely"},
+		[]string{"build_id", "invocation_id", "git_branch", "status", "cached_locally", "cached_remotely", "strategy"},
+	)
+	BuildEventTestResultDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "build_event_test_result_duration_seconds",
+			Help:    "Build event test result duration in seconds",
+			Buckets: []float64{0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000},
+		},
+		[]string{"build_id", "invocation_id", "git_branch", "status", "cached_locally", "cached_remotely", "strategy"},
 	)
 	BuildEventTestSummaryOverallStatus = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -135,6 +143,7 @@ func register() {
 	prometheus.MustRegister(BuildEventConfigured)
 	prometheus.MustRegister(BuildEventConfiguration)
 	prometheus.MustRegister(BuildEventTestResult)
+	prometheus.MustRegister(BuildEventTestResultDuration)
 	prometheus.MustRegister(BuildEventTestSummaryOverallStatus)
 	prometheus.MustRegister(BuildEventTestSummaryAttemptCount)
 	prometheus.MustRegister(BuildEventTestSummaryRunCount)

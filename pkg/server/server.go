@@ -235,11 +235,11 @@ func updateMetricsFromEvent(buildID, invocationID string, sequenceNumber int64, 
 		status := testResult.Status.String()
 		cachedLocally := fmt.Sprintf("%v", testResult.CachedLocally)
 		cachedRemotely := fmt.Sprintf("%v", testResult.ExecutionInfo != nil && testResult.ExecutionInfo.CachedRemotely || false)
-		//testResult.ExecutionInfo.ExitCode
-		//testResult.ExecutionInfo.ResourceUsage[0].Name
-		//testResult.ExecutionInfo.ResourceUsage[0].Value
-		allLabels := metrics.MergeLabels(labels, map[string]string{"status": status, "cached_locally": cachedLocally, "cached_remotely": cachedRemotely})
+		strategy := testResult.ExecutionInfo.Strategy
+		durationSeconds := testResult.GetTestAttemptDuration().AsDuration().Seconds()
+		allLabels := metrics.MergeLabels(labels, map[string]string{"status": status, "cached_locally": cachedLocally, "cached_remotely": cachedRemotely, "strategy": strategy})
 		metrics.BuildEventTestResult.With(allLabels).Inc()
+		metrics.BuildEventTestResultDuration.With(allLabels).Observe(durationSeconds)
 	}
 	if testSummary := event.GetTestSummary(); testSummary != nil {
 		log.Printf("testSummary: %v\n", testSummary)
@@ -263,7 +263,7 @@ func updateMetricsFromEvent(buildID, invocationID string, sequenceNumber int64, 
 		if metadata != nil {
 			updateMetadataFromWorkspaceStatus(metadata, workspaceStatus)
 		} else {
-			log.Printf("metadata is nil")
+			log.Printf("Warning: metadata is nil, can't update it from workspace status")
 		}
 	}
 }
