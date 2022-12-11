@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"strings"
 	"time"
 
 	bes "google.golang.org/genproto/googleapis/devtools/build/v1"
@@ -14,17 +16,29 @@ import (
 	"github.com/ldx/bep2prom/pkg/metrics"
 )
 
+var (
+	stripMetadataPrefixes = map[string]bool{
+		"STABLE_": true,
+	}
+)
+
+type BuildInfo struct {
+	invocationID string
+	startedAt    time.Time         // Build start time.
+	metadata     map[string]string // Workspace status variables.
+}
+
 type Server struct {
-	builds map[string]time.Time
+	builds map[string]*BuildInfo // Build ID + invocation ID -> build info.
 }
 
 func New() *Server {
 	return &Server{
-		builds: make(map[string]time.Time),
+		builds: make(map[string]*BuildInfo),
 	}
 }
 
-// Handle lifecycle events.
+// PublishLifecycleEvent handles lifecycle events.
 func (s *Server) PublishLifecycleEvent(ctx context.Context, in *bes.PublishLifecycleEventRequest) (*emptypb.Empty, error) {
 	ev := in.GetBuildEvent()
 	if ev == nil {
@@ -33,22 +47,28 @@ func (s *Server) PublishLifecycleEvent(ctx context.Context, in *bes.PublishLifec
 	buildID := ev.GetStreamId().GetBuildId()
 	if buildEnqueued := ev.GetEvent().GetBuildEnqueued(); buildEnqueued != nil {
 		// Build enqueued, persist start time.
-		s.builds[buildID] = ev.GetEvent().EventTime.AsTime()
+		startedAt := ev.GetEvent().EventTime.AsTime()
+		s.builds[buildID] = &BuildInfo{
+			startedAt: startedAt,
+			metadata:  make(map[string]string),
+		}
+		log.Printf("Build enqueued %v %v", buildID, startedAt)
 	}
 	if buildFinished := ev.GetEvent().GetBuildFinished(); buildFinished != nil {
-		if startedAt, ok := s.builds[buildID]; ok {
+		if buildInfo, ok := s.builds[buildID]; ok {
 			// Build finished, calculate duration.
 			result := buildFinished.GetStatus().GetResult().String()
-			duration := ev.GetEvent().EventTime.AsTime().Sub(startedAt)
-			log.Printf("Build %s finished in %s: %s", buildID, duration, result)
-			metrics.BuildCompleted.WithLabelValues(buildID, result).Observe(duration.Seconds())
+			duration := ev.GetEvent().EventTime.AsTime().Sub(buildInfo.startedAt)
+			log.Printf("Build %v finished in %s: %s", buildID, duration, result)
+			labels := metrics.BuildLabels(buildID, "", buildInfo.metadata)
+			metrics.BuildCompleted.With(metrics.MergeLabels(labels, map[string]string{"result": result})).Observe(duration.Seconds())
 			delete(s.builds, buildID)
 		}
 	}
 	return &emptypb.Empty{}, nil
 }
 
-//PublishBuildToolEventStream(PublishBuildEvent_PublishBuildToolEventStreamServer) error
+// PublishBuildToolEventStream processes a stream of BEP events.
 func (s *Server) PublishBuildToolEventStream(stream bes.PublishBuildEvent_PublishBuildToolEventStreamServer) error {
 	for {
 		in, err := stream.Recv()
@@ -67,10 +87,15 @@ func (s *Server) PublishBuildToolEventStream(stream bes.PublishBuildEvent_Publis
 		buildID := streamID.GetBuildId()
 		invocationID := streamID.GetInvocationId()
 		sequenceNumber := in.GetOrderedBuildEvent().GetSequenceNumber()
+		var metadata map[string]string
+		buildInfo := s.builds[buildID]
+		if buildInfo != nil {
+			metadata = buildInfo.metadata
+		}
 		if be, ok := in.OrderedBuildEvent.Event.Event.(*bes.BuildEvent_BazelEvent); ok {
 			event := new(bb.BuildEvent)
 			if err = be.BazelEvent.UnmarshalTo(event); err == nil {
-				updateMetricsFromEvent(buildID, invocationID, sequenceNumber, event)
+				updateMetricsFromEvent(buildID, invocationID, sequenceNumber, metadata, event)
 			} else {
 				log.Printf("Warning, got BazelEvent that is not a BuildEvent: %s\n", be.BazelEvent.GetTypeUrl())
 			}
@@ -85,7 +110,21 @@ func (s *Server) PublishBuildToolEventStream(stream bes.PublishBuildEvent_Publis
 	}
 }
 
-func updateMetricsFromEvent(buildID, invoicationID string, sequenceNumber int64, event *bb.BuildEvent) {
+func updateMetadataFromWorkspaceStatus(metadata map[string]string, workspaceStatus *bb.WorkspaceStatus) {
+	for _, item := range workspaceStatus.Item {
+		key := item.Key
+		for prefix := range stripMetadataPrefixes {
+			if len(key) > len(prefix) && key[:len(prefix)] == prefix {
+				key = strings.ToLower(key[len(prefix):])
+				break
+			}
+		}
+		metadata[key] = item.Value
+		log.Printf("Metadata: %s=%s", key, item.Value)
+	}
+}
+
+func updateMetricsFromEvent(buildID, invocationID string, sequenceNumber int64, metadata map[string]string, event *bb.BuildEvent) {
 	label := ""
 	kind := ""
 	if id := event.GetId(); id != nil {
@@ -102,7 +141,10 @@ func updateMetricsFromEvent(buildID, invoicationID string, sequenceNumber int64,
 			kind = "test"
 		}
 	}
-	desc := fmt.Sprintf("%s %s %d %s %s", buildID, invoicationID, sequenceNumber, kind, label)
+	// Metric labels.
+	labels := metrics.BuildLabels(buildID, invocationID, metadata)
+	// Description used for logging.
+	desc := fmt.Sprintf("%v %d %s %s", labels, sequenceNumber, kind, label)
 	log.Printf("=== BuildEvent: %s\n", desc)
 	if action := event.GetAction(); action != nil {
 		log.Printf("%s action: %v\n", desc, action)
@@ -114,7 +156,12 @@ func updateMetricsFromEvent(buildID, invoicationID string, sequenceNumber int64,
 		log.Printf("buildMetadata: %v\n", buildMetadata)
 	}
 	if buildMetrics := event.GetBuildMetrics(); buildMetrics != nil {
-		log.Printf("buildMetrics: %v\n", buildMetrics)
+		buf, err := json.Marshal(buildMetrics)
+		if err != nil {
+			log.Printf("buildMetrics: %v\n", buildMetrics)
+		} else {
+			log.Printf("buildMetrics: %s\n", buf)
+		}
 	}
 	//if buildToolLogs := event.GetBuildToolLogs(); buildToolLogs != nil {
 	//	log.Printf("buildToolLogs: %v\n", buildToolLogs)
@@ -124,15 +171,18 @@ func updateMetricsFromEvent(buildID, invoicationID string, sequenceNumber int64,
 	//}
 	if completed := event.GetCompleted(); completed != nil {
 		log.Printf("completed: success %v\n", completed.GetSuccess())
-		metrics.BuildEventCompleted.WithLabelValues(buildID, invoicationID, kind, label).Inc()
+		allLabels := metrics.MergeLabels(labels, map[string]string{"kind": kind, "label": label})
+		metrics.BuildEventCompleted.With(allLabels).Inc()
 	}
 	if configuration := event.GetConfiguration(); configuration != nil {
 		log.Printf("configuration: %v\n", configuration)
-		metrics.BuildEventConfiguration.WithLabelValues(buildID, invoicationID, configuration.Mnemonic, configuration.PlatformName, configuration.Cpu).Inc()
+		allLabels := metrics.MergeLabels(labels, map[string]string{"mnemonic": configuration.GetMnemonic(), "platform_name": configuration.GetPlatformName(), "cpu": configuration.Cpu})
+		metrics.BuildEventConfiguration.With(allLabels).Inc()
 	}
 	if configured := event.GetConfigured(); configured != nil {
 		log.Printf("configured: %v\n", configured)
-		metrics.BuildEventConfigured.WithLabelValues(buildID, invoicationID, configured.TargetKind).Inc()
+		allLabels := metrics.MergeLabels(labels, map[string]string{"target_kind": configured.GetTargetKind()})
+		metrics.BuildEventConfigured.With(allLabels).Inc()
 	}
 	//if convenienceSymlinksIdentified := event.GetConvenienceSymlinksIdentified(); convenienceSymlinksIdentified != nil {
 	//	log.Printf("convenienceSymlinksIdentified: %v\n", convenienceSymlinksIdentified)
@@ -146,7 +196,8 @@ func updateMetricsFromEvent(buildID, invoicationID string, sequenceNumber int64,
 	if finished := event.GetFinished(); finished != nil {
 		log.Printf("finished: %v\n", finished)
 		overallSuccess := fmt.Sprintf("%v", finished.GetOverallSuccess())
-		metrics.BuildEventFinished.WithLabelValues(buildID, invoicationID, overallSuccess).Inc()
+		allLabels := metrics.MergeLabels(labels, map[string]string{"overall_success": overallSuccess})
+		metrics.BuildEventFinished.With(allLabels).Inc()
 	}
 	//if lastMessage := event.GetLastMessage(); lastMessage {
 	//	log.Printf("lastMessage: %v\n", lastMessage)
@@ -165,7 +216,8 @@ func updateMetricsFromEvent(buildID, invoicationID string, sequenceNumber int64,
 	//}
 	if started := event.GetStarted(); started != nil {
 		log.Printf("started: %v\n", started)
-		metrics.BuildEventStarted.WithLabelValues(buildID, invoicationID, started.BuildToolVersion, started.Command).Inc()
+		allLabels := metrics.MergeLabels(labels, map[string]string{"build_tool_version": started.GetBuildToolVersion(), "command": started.GetCommand()})
+		metrics.BuildEventStarted.With(allLabels).Inc()
 	}
 	//if structuredCommandLine := event.GetStructuredCommandLine(); structuredCommandLine != nil {
 	//	log.Printf("structuredCommandLine: %v\n", structuredCommandLine)
@@ -174,33 +226,44 @@ func updateMetricsFromEvent(buildID, invoicationID string, sequenceNumber int64,
 		log.Printf("targetSummary: %v\n", targetSummary)
 	}
 	if testResult := event.GetTestResult(); testResult != nil {
-		log.Printf("%s testResult: %v\n", desc, testResult)
+		buf, err := json.Marshal(testResult)
+		if err != nil {
+			log.Printf("%s testResult: %v\n", desc, testResult)
+		} else {
+			log.Printf("%s testResult: %s\n", desc, buf)
+		}
 		status := testResult.Status.String()
 		cachedLocally := fmt.Sprintf("%v", testResult.CachedLocally)
-		metrics.BuildEventTestResult.WithLabelValues(buildID, invoicationID, status, cachedLocally).Inc()
+		//testResult.ExecutionInfo.CachedRemotely
+		//testResult.ExecutionInfo.ExitCode
+		//testResult.ExecutionInfo.ResourceUsage[0].Name
+		//testResult.ExecutionInfo.ResourceUsage[0].Value
+		allLabels := metrics.MergeLabels(labels, map[string]string{"status": status, "cached_locally": cachedLocally})
+		metrics.BuildEventTestResult.With(allLabels).Inc()
 	}
 	if testSummary := event.GetTestSummary(); testSummary != nil {
 		log.Printf("testSummary: %v\n", testSummary)
 		overallStatus := testSummary.GetOverallStatus().String()
-		attemptCount := fmt.Sprintf("%d", testSummary.GetAttemptCount())
-		runCount := fmt.Sprintf("%d", testSummary.GetRunCount())
-		shardCount := fmt.Sprintf("%d", testSummary.GetShardCount())
-		totalNumCached := fmt.Sprintf("%d", testSummary.GetTotalNumCached())
-		totalRunCount := fmt.Sprintf("%d", testSummary.GetTotalRunCount())
-		metrics.BuildEventTestSummaryOverallStatus.WithLabelValues(buildID, invoicationID, overallStatus).Inc()
-		metrics.BuildEventTestSummaryAttemptCount.WithLabelValues(buildID, invoicationID, attemptCount).Inc()
-		metrics.BuildEventTestSummaryRunCount.WithLabelValues(buildID, invoicationID, runCount).Inc()
-		metrics.BuildEventTestSummaryShardCount.WithLabelValues(buildID, invoicationID, shardCount).Inc()
-		metrics.BuildEventTestSummaryTotalNumCached.WithLabelValues(buildID, invoicationID, totalNumCached).Inc()
-		metrics.BuildEventTestSummaryTotalRunCount.WithLabelValues(buildID, invoicationID, totalRunCount).Inc()
+		metrics.BuildEventTestSummaryOverallStatus.With(metrics.MergeLabels(labels, map[string]string{"overall_status": overallStatus})).Inc()
+		// Gauges.
+		metrics.BuildEventTestSummaryAttemptCount.With(labels).Set(float64(testSummary.GetAttemptCount()))
+		metrics.BuildEventTestSummaryRunCount.With(labels).Set(float64(testSummary.GetRunCount()))
+		metrics.BuildEventTestSummaryShardCount.With(labels).Set(float64(testSummary.GetShardCount()))
+		metrics.BuildEventTestSummaryTotalNumCached.With(labels).Set(float64(testSummary.GetTotalNumCached()))
+		metrics.BuildEventTestSummaryTotalRunCount.With(labels).Set(float64(testSummary.GetTotalRunCount()))
 	}
 	//if unstructuredCommandLine := event.GetUnstructuredCommandLine(); unstructuredCommandLine != nil {
 	//	log.Printf("unstructuredCommandLine: %v\n", unstructuredCommandLine)
 	//}
-	//if workspaceInfo := event.GetWorkspaceInfo(); workspaceInfo != nil {
-	//	log.Printf("workspaceInfo: %v\n", workspaceInfo)
-	//}
-	//if workspaceStatus := event.GetWorkspaceStatus(); workspaceStatus != nil {
-	//	log.Printf("workspaceStatus: %v\n", workspaceStatus)
-	//}
+	if workspaceInfo := event.GetWorkspaceInfo(); workspaceInfo != nil {
+		log.Printf("workspaceInfo: %v\n", workspaceInfo)
+	}
+	if workspaceStatus := event.GetWorkspaceStatus(); workspaceStatus != nil {
+		log.Printf("workspaceStatus: %v\n", workspaceStatus)
+		if metadata != nil {
+			updateMetadataFromWorkspaceStatus(metadata, workspaceStatus)
+		} else {
+			log.Printf("metadata is nil")
+		}
+	}
 }
