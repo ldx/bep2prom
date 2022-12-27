@@ -111,6 +111,56 @@ var (
 		},
 		[]string{"git_branch"},
 	)
+	NumAnalyses = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "num_analyses_total",
+			Help: "Number of analyses; if <= 1 it is a clean build",
+		},
+		[]string{"git_branch"},
+	)
+	PackagesLoaded = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "packages_loaded_total",
+			Help: "Number of packages loaded",
+		},
+		[]string{"git_branch"},
+	)
+	TargetsConfigured = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "targets_configured_total",
+			Help: "Number of targets configured",
+		},
+		[]string{"git_branch"},
+	)
+	ActionsCreated = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "actions_created_total",
+			Help: "Number of actions created",
+		},
+		[]string{"git_branch"},
+	)
+	ActionsExecuted = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "actions_executed_total",
+			Help: "Number of actions executed",
+		},
+		[]string{"git_branch"},
+	)
+	ActionDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "action_duration_seconds",
+			Help:    "Action duration in seconds",
+			Buckets: []float64{0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000},
+		},
+		[]string{"git_branch", "mnemonic"},
+	)
+	OutputArtifactCount = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "output_artifact_count_total",
+			Help: "Number of output artifacts",
+		},
+		[]string{"git_branch"},
+	)
 )
 
 func BuildLabels(metadata map[string]string) prometheus.Labels {

@@ -162,6 +162,39 @@ func updateMetricsFromEvent(buildID, invocationID string, sequenceNumber int64, 
 		} else {
 			log.Printf("buildMetrics: %s\n", buf)
 		}
+		if cumulativeMetrics := buildMetrics.CumulativeMetrics; cumulativeMetrics != nil {
+			numAnalyses := cumulativeMetrics.NumAnalyses
+			log.Printf("numAnalyses: %d\n", numAnalyses)
+			metrics.NumAnalyses.With(labels).Set(float64(numAnalyses))
+		}
+		if packageMetrics := buildMetrics.PackageMetrics; packageMetrics != nil {
+			packagesLoaded := packageMetrics.PackagesLoaded
+			log.Printf("packagesLoaded: %d\n", packagesLoaded)
+			metrics.PackagesLoaded.With(labels).Set(float64(packagesLoaded))
+		}
+		if targetMetrics := buildMetrics.TargetMetrics; targetMetrics != nil {
+			targetsConfigured := targetMetrics.TargetsConfigured
+			log.Printf("targetsConfigured: %d\n", targetsConfigured)
+			metrics.TargetsConfigured.With(labels).Set(float64(targetsConfigured))
+		}
+		if actionSummary := buildMetrics.ActionSummary; actionSummary != nil {
+			actionsCreated := actionSummary.ActionsCreated
+			log.Printf("actionsCreated: %d\n", actionsCreated)
+			metrics.ActionsCreated.With(labels).Set(float64(actionsCreated))
+			actionsExecuted := actionSummary.ActionsExecuted
+			log.Printf("actionsExecuted: %d\n", actionsExecuted)
+			metrics.ActionsExecuted.With(labels).Set(float64(actionsExecuted))
+			for _, actionData := range actionSummary.ActionData {
+				allLabels := metrics.MergeLabels(labels, map[string]string{"mnemonic": actionData.Mnemonic})
+				d := (actionData.LastEndedMs - actionData.FirstStartedMs) / 1000
+				metrics.ActionDuration.With(allLabels).Observe(float64(d))
+			}
+		}
+		if buildGraphMetrics := buildMetrics.BuildGraphMetrics; buildGraphMetrics != nil {
+			outputArtifactCount := buildGraphMetrics.OutputArtifactCount
+			log.Printf("outputArtifactCount: %d\n", outputArtifactCount)
+			metrics.OutputArtifactCount.With(labels).Set(float64(outputArtifactCount))
+		}
 	}
 	//if buildToolLogs := event.GetBuildToolLogs(); buildToolLogs != nil {
 	//	log.Printf("buildToolLogs: %v\n", buildToolLogs)
