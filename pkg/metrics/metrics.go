@@ -113,35 +113,35 @@ var (
 	)
 	NumAnalyses = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "build_num_analyses_total",
+			Name: "build_num_analyses",
 			Help: "Number of analyses; if <= 1 it is a clean build",
 		},
 		[]string{"git_branch"},
 	)
 	PackagesLoaded = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "build_packages_loaded_total",
+			Name: "build_packages_loaded",
 			Help: "Number of packages loaded",
 		},
 		[]string{"git_branch"},
 	)
 	TargetsConfigured = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "build_targets_configured_total",
+			Name: "build_targets_configured",
 			Help: "Number of targets configured",
 		},
 		[]string{"git_branch"},
 	)
 	ActionsCreated = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "build_actions_created_total",
+			Name: "build_actions_created",
 			Help: "Number of actions created",
 		},
 		[]string{"git_branch"},
 	)
 	ActionsExecuted = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "build_actions_executed_total",
+			Name: "build_actions_executed",
 			Help: "Number of actions executed",
 		},
 		[]string{"git_branch"},
@@ -156,7 +156,7 @@ var (
 	)
 	OutputArtifactCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "build_output_artifact_count_total",
+			Name: "build_output_artifact_count",
 			Help: "Number of output artifacts",
 		},
 		[]string{"git_branch"},
