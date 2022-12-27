@@ -17,49 +17,49 @@ var (
 			Help:    "Build completed time in seconds",
 			Buckets: []float64{0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000},
 		},
-		[]string{"build_id", "invocation_id", "git_branch", "result"},
+		[]string{"git_branch", "result"},
 	)
 	BuildEventStarted = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "build_event_started_total",
 			Help: "Build event started total",
 		},
-		[]string{"build_id", "invocation_id", "git_branch", "build_tool_version", "command"},
+		[]string{"git_branch", "build_tool_version", "command"},
 	)
 	BuildEventFinished = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "build_event_finished_total",
 			Help: "Build event finished total",
 		},
-		[]string{"build_id", "invocation_id", "git_branch", "overall_success"},
+		[]string{"git_branch", "overall_success"},
 	)
 	BuildEventCompleted = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "build_event_completed_total",
 			Help: "Build event completed total",
 		},
-		[]string{"build_id", "invocation_id", "git_branch", "kind", "label"},
+		[]string{"git_branch", "kind", "label"},
 	)
 	BuildEventConfigured = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "build_event_configured_total",
 			Help: "Build event configured total",
 		},
-		[]string{"build_id", "invocation_id", "git_branch", "kind"},
+		[]string{"git_branch", "kind"},
 	)
 	BuildEventConfiguration = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "build_event_configuration_total",
 			Help: "Build event configuration total",
 		},
-		[]string{"build_id", "invocation_id", "git_branch", "mnemonic", "platform_name", "cpu"},
+		[]string{"git_branch", "mnemonic", "platform_name", "cpu"},
 	)
 	BuildEventTestResult = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "build_event_test_result_total",
 			Help: "Build event test result total",
 		},
-		[]string{"build_id", "invocation_id", "git_branch", "status", "cached_locally", "cached_remotely", "strategy"},
+		[]string{"git_branch", "status", "cached_locally", "cached_remotely", "strategy"},
 	)
 	BuildEventTestResultDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -67,57 +67,55 @@ var (
 			Help:    "Build event test result duration in seconds",
 			Buckets: []float64{0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000},
 		},
-		[]string{"build_id", "invocation_id", "git_branch", "status", "cached_locally", "cached_remotely", "strategy"},
+		[]string{"git_branch", "status", "cached_locally", "cached_remotely", "strategy"},
 	)
 	BuildEventTestSummaryOverallStatus = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "build_event_test_summary_total",
 			Help: "Build event test summary total",
 		},
-		[]string{"build_id", "invocation_id", "git_branch", "overall_status"},
+		[]string{"git_branch", "overall_status"},
 	)
 	BuildEventTestSummaryAttemptCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "build_event_test_summary_attempt_count",
 			Help: "Build event test summary attempt count",
 		},
-		[]string{"build_id", "invocation_id", "git_branch"},
+		[]string{"git_branch"},
 	)
 	BuildEventTestSummaryRunCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "build_event_test_summary_run_count",
 			Help: "Build event test summary run count",
 		},
-		[]string{"build_id", "invocation_id", "git_branch"},
+		[]string{"git_branch"},
 	)
 	BuildEventTestSummaryShardCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "build_event_test_summary_shard_count",
 			Help: "Build event test summary shard count",
 		},
-		[]string{"build_id", "invocation_id", "git_branch"},
+		[]string{"git_branch"},
 	)
 	BuildEventTestSummaryTotalNumCached = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "build_event_test_summary_total_num_cached",
 			Help: "Build event test summary total num cached",
 		},
-		[]string{"build_id", "invocation_id", "git_branch"},
+		[]string{"git_branch"},
 	)
 	BuildEventTestSummaryTotalRunCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "build_event_test_summary_total_run_count",
 			Help: "Build event test summary total run count",
 		},
-		[]string{"build_id", "invocation_id", "git_branch"},
+		[]string{"git_branch"},
 	)
 )
 
-func BuildLabels(buildID, invocationID string, metadata map[string]string) prometheus.Labels {
+func BuildLabels(metadata map[string]string) prometheus.Labels {
 	labels := prometheus.Labels{
-		"build_id":      buildID,
-		"invocation_id": invocationID,
-		"git_branch":    "",
+		"git_branch": "",
 	}
 	for k := range AllowedMetadataLabels {
 		labels[k] = metadata[k]

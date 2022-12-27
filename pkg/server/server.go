@@ -60,7 +60,7 @@ func (s *Server) PublishLifecycleEvent(ctx context.Context, in *bes.PublishLifec
 			result := buildFinished.GetStatus().GetResult().String()
 			duration := ev.GetEvent().EventTime.AsTime().Sub(buildInfo.startedAt)
 			log.Printf("Build %v finished in %s: %s", buildID, duration, result)
-			labels := metrics.BuildLabels(buildID, "", buildInfo.metadata)
+			labels := metrics.BuildLabels(buildInfo.metadata)
 			metrics.BuildCompleted.With(metrics.MergeLabels(labels, map[string]string{"result": result})).Observe(duration.Seconds())
 			delete(s.builds, buildID)
 		}
@@ -142,9 +142,9 @@ func updateMetricsFromEvent(buildID, invocationID string, sequenceNumber int64, 
 		}
 	}
 	// Metric labels.
-	labels := metrics.BuildLabels(buildID, invocationID, metadata)
+	labels := metrics.BuildLabels(metadata)
 	// Description used for logging.
-	desc := fmt.Sprintf("%v %d %s %s", labels, sequenceNumber, kind, label)
+	desc := fmt.Sprintf("%s %s %d %v %s %s", buildID, invocationID, sequenceNumber, labels, kind, label)
 	log.Printf("=== BuildEvent: %s\n", desc)
 	if action := event.GetAction(); action != nil {
 		log.Printf("%s action: %v\n", desc, action)
