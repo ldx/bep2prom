@@ -198,6 +198,13 @@ func register() {
 	prometheus.MustRegister(BuildEventTestSummaryShardCount)
 	prometheus.MustRegister(BuildEventTestSummaryTotalNumCached)
 	prometheus.MustRegister(BuildEventTestSummaryTotalRunCount)
+	prometheus.MustRegister(NumAnalyses)
+	prometheus.MustRegister(PackagesLoaded)
+	prometheus.MustRegister(TargetsConfigured)
+	prometheus.MustRegister(ActionsCreated)
+	prometheus.MustRegister(ActionsExecuted)
+	prometheus.MustRegister(ActionDuration)
+	prometheus.MustRegister(OutputArtifactCount)
 }
 
 func Serve() error {
