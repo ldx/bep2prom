@@ -1,20 +1,21 @@
 {
     "configurations": [
         {
-            "name": "Debug bep2prom",
+            "name": "Launch //cmd/bep2prom",
             "type": "go",
-            "debugAdapter": "dlv-dap",
-            "request": "attach",
-            "mode": "remote",
-            "port": 21671,
-            "host": "127.0.0.1",
-            "logOutput": "dap",
+            "request": "launch",
+            "mode": "exec",
+            "program": "${workspaceRoot}/bazel-bin/cmd/bep2prom/bep2prom_/bep2prom",
+            "env": {},
+            "args": [],
+            "preLaunchTask": "Build //cmd/bep2prom",
+            "cwd": "${workspaceRoot}",
+            "logOutput": "debugger,dap",
             "showLog": true,
-            "trace": "verbose",
-            "preLaunchTask": "Debug bep2prom",
             "substitutePath": [
                 { "from": "${workspaceFolder}", "to": "" }
-            ]
+            ],
+            "trace": "verbose"
         }
     ]
 }

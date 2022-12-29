@@ -2,10 +2,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Debug bep2prom",
+            "label": "Build //cmd/bep2prom",
             "type": "shell",
-            "command": "${workspaceFolder}/tools/dlv-bazel",
-            "isBackground": true
+            "command": "bazel build --strip=never -c dbg //cmd/bep2prom"
         }
     ]
 }
