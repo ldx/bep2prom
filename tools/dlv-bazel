@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CMD_TARGET=$(find cmd/* -type d | head -n1)
+TARGET=${TARGET:-$CMD_TARGET}
+PORT=${PORT:-21671}
+
+echo "Args:" "${@}"
+
+bazel build --strip=never -c dbg "${TARGET}"
+
+OUTPUT=$(bazel cquery --strip=never -c dbg --output=files "${TARGET}")
+
+echo "Launching dlv for ${OUTPUT} / ${TARGET}"
+
+dlv exec --headless=true --listen="127.0.0.1:$PORT" --api-version=2 "$OUTPUT"

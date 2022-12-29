@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "Debug bep2prom",
+            "type": "go",
+            "debugAdapter": "dlv-dap",
+            "request": "attach",
+            "mode": "remote",
+            "port": 21671,
+            "host": "127.0.0.1",
+            "logOutput": "dap",
+            "showLog": true,
+            "trace": "verbose",
+            "preLaunchTask": "Debug bep2prom",
+            "substitutePath": [
+                { "from": "${workspaceFolder}", "to": "" }
+            ]
+        }
+    ]
+}

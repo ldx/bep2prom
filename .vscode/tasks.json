@@ -1,0 +1,11 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Debug bep2prom",
+            "type": "shell",
+            "command": "${workspaceFolder}/tools/dlv-bazel",
+            "isBackground": true
+        }
+    ]
+}
