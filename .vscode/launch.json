@@ -1,18 +1,22 @@
 {
+    "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch //cmd/bep2prom",
+            "name": "Launch //cmd/bep2prom:bep2prom",
             "type": "go",
             "request": "launch",
             "mode": "exec",
-            "program": "${workspaceRoot}/bazel-bin/cmd/bep2prom/bep2prom_/bep2prom",
+            "program": "${workspaceRoot}/bazel-out/k8-fastbuild/bin/cmd/bep2prom/bep2prom_/bep2prom",
             "env": {},
             "args": [],
-            "preLaunchTask": "Build //cmd/bep2prom",
+            "preLaunchTask": "Build //cmd/bep2prom:bep2prom",
             "cwd": "${workspaceRoot}",
             "showLog": true,
             "substitutePath": [
-                { "from": "${workspaceFolder}", "to": "" }
+                {
+                    "from": "${workspaceFolder}",
+                    "to": ""
+                }
             ],
             "trace": "verbose"
         }

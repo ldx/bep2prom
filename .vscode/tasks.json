@@ -2,9 +2,11 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build //cmd/bep2prom",
+            "label": "Build //cmd/bep2prom:bep2prom",
             "type": "shell",
-            "command": "bazel build --strip=never -c dbg //cmd/bep2prom"
+            "command": "bazel build --strip=never -c dbg //cmd/bep2prom:bep2prom",
+            "group": "build",
+            "problemMatcher": []
         }
     ]
 }
