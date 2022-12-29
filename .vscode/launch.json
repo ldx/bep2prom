@@ -10,7 +10,6 @@
             "args": [],
             "preLaunchTask": "Build //cmd/bep2prom",
             "cwd": "${workspaceRoot}",
-            "logOutput": "debugger,dap",
             "showLog": true,
             "substitutePath": [
                 { "from": "${workspaceFolder}", "to": "" }
