@@ -7,6 +7,13 @@
             "command": "bazel build --strip=never -c dbg //cmd/bep2prom:bep2prom",
             "group": "build",
             "problemMatcher": []
+        },
+        {
+            "label": "Build //pkg/server:server_test",
+            "type": "shell",
+            "command": "bazel build --strip=never -c dbg //pkg/server:server_test",
+            "group": "test",
+            "problemMatcher": []
         }
     ]
 }
