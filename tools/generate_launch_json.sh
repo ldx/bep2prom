@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+bazel_flags="--strip=never -c dbg"
+
 workspace_root=$(bazel info workspace)
 
 build_targets=$(bazel query 'kind(go_binary, //...) except attr(generator_name, image, //...)' --output label | sort)
@@ -10,7 +12,7 @@ test_targets=$(bazel query 'kind(go_test, //...)' --output label | sort)
 tasks=()
 configurations=()
 for target in "${build_targets[@]}" "${test_targets[@]}"; do
-    output=$(bazel cquery --output=files "$target")
+    output=$(bazel cquery ${bazel_flags} --output=files "$target")
     echo "Adding ${target}, output: ${output}"
     configurations+=(
         "{
@@ -38,7 +40,7 @@ for target in "${build_targets[@]}" "${test_targets[@]}"; do
         "{
             \"label\": \"Build ${target}\",
             \"type\": \"shell\",
-            \"command\": \"bazel build --strip=never -c dbg ${target}\",
+            \"command\": \"bazel build ${bazel_flags} ${target}\",
             \"group\": \"${group}\",
             \"problemMatcher\": []
         }"
