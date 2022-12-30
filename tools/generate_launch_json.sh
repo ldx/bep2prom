@@ -4,12 +4,14 @@ set -euo pipefail
 
 workspace_root=$(bazel info workspace)
 
-targets=$(bazel query 'kind(go_binary, //...) except attr(generator_name, image, //...)' --output label | sort)
+build_targets=$(bazel query 'kind(go_binary, //...) except attr(generator_name, image, //...)' --output label | sort)
+test_targets=$(bazel query 'kind(go_test, //...)' --output label | sort)
 
 tasks=()
 configurations=()
-for target in "${targets[@]}"; do
+for target in "${build_targets[@]}" "${test_targets[@]}"; do
     output=$(bazel cquery --output=files "$target")
+    echo "Adding ${target}, output: ${output}"
     configurations+=(
         "{
             \"name\": \"Launch ${target}\",
@@ -28,12 +30,16 @@ for target in "${targets[@]}"; do
             \"trace\": \"verbose\"
         }"
     )
+    group="build"
+    if [[ "${target}" == *"_test" ]]; then
+        group="test"
+    fi
     tasks+=(
         "{
             \"label\": \"Build ${target}\",
             \"type\": \"shell\",
             \"command\": \"bazel build --strip=never -c dbg ${target}\",
-            \"group\": \"build\",
+            \"group\": \"${group}\",
             \"problemMatcher\": []
         }"
     )
