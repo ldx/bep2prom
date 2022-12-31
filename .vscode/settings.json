@@ -7,5 +7,31 @@
     "go.useLanguageServer": true,
     "go.alternateTools": {
         "dlv": "${workspaceFolder}/bazel-bin/external/com_github_go_delve_delve/cmd/dlv/dlv_/dlv"
+    },
+    "go.enableCodeLens": {
+        "references": false,
+        "runtest": false
+    },
+    "go.buildOnSave": "off",
+    "go.lintOnSave": "on",
+    "go.vetOnSave": "on",
+    "gopls": {
+        "build.directoryFilters": [
+            "-bazel-bin",
+            "-bazel-gocode",
+            "-bazel-out",
+            "-bazel-testlogs"
+        ],
+        "ui.semanticTokens": true,
+        "ui.codelenses": {
+            "gc_details": false,
+            "regenerate_cgo": false,
+            "generate": false,
+            "test": false,
+            "tidy": false,
+            "upgrade_dependency": false,
+            "vendor": false
+        },
+        "build.memoryMode": "DegradeClosed"
     }
 }
