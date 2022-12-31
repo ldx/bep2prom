@@ -13,7 +13,7 @@ test_targets=$(bazel query 'kind(go_test, //...)' --output label | sort)
 tasks=()
 configurations=()
 for target in "${build_targets[@]}" "${test_targets[@]}"; do
-    output=$(bazel cquery "${bazel_flags}" --output=files "$target")
+    output=$(bazel cquery ${bazel_flags} --output=files "$target")
     echo "Adding ${target}, output: ${output}"
     configurations+=(
         "{
