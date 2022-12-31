@@ -14,8 +14,8 @@
     "go.vetOnSave": "on",
     "gopls": {
         "build.directoryFilters": [
+            "-bazel-bep2prom",
             "-bazel-bin",
-            "-bazel-gocode",
             "-bazel-out",
             "-bazel-testlogs"
         ],
