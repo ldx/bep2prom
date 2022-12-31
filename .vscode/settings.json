@@ -4,5 +4,8 @@
         "GOPACKAGESDRIVER_BAZEL_QUERY": "kind(go_binary, //...)",
         "GOPACKAGESDRIVER": "${workspaceFolder}/tools/gopackagesdriver.sh"
     },
-    "go.useLanguageServer": true
+    "go.useLanguageServer": true,
+    "go.alternateTools": {
+        "dlv": "${workspaceFolder}/bazel-bin/external/com_github_go_delve_delve/cmd/dlv/dlv_/dlv"
+    }
 }
