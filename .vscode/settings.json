@@ -6,12 +6,11 @@
     },
     "go.useLanguageServer": true,
     "go.enableCodeLens": {
-        "references": false,
         "runtest": false
     },
     "go.buildOnSave": "off",
-    "go.lintOnSave": "on",
-    "go.vetOnSave": "on",
+    "go.lintOnSave": "file",
+    "go.vetOnSave": "package",
     "gopls": {
         "build.directoryFilters": [
             "-bazel-bep2prom",
@@ -30,5 +29,29 @@
             "vendor": false
         },
         "build.memoryMode": "DegradeClosed"
+    },
+    "emeraldwalk.runonsave": {
+        "commands": [
+            {
+                "match": ".*\\.go$",
+                "isAsync": true,
+                "cmd": "bazel run //:gazelle"
+            },
+            {
+                "match": ".*\\.proto$",
+                "isAsync": true,
+                "cmd": "bazel run //:gazelle"
+            },
+            {
+                "match": "go.mod$",
+                "isAsync": true,
+                "cmd": "bazel run //:gazelle-update-repos"
+            },
+            {
+                "match": "BUILD.*",
+                "isAsync": true,
+                "cmd": "${workspaceFolder}/tools/generate_launch_json.sh"
+            }
+        ]
     }
 }
